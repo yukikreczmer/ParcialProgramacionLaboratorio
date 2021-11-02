@@ -37,11 +37,22 @@ void PedirString (char mensaje[], char stringIngresado[])
 void PedirStringPrimeraMayusc (char mensaje[], char stringIngresado[])
 {
 	char aux[100];
-    printf("%s \n", mensaje);
-    fflush(stdin);
-    scanf("%[^\n]", aux);
-    strlwr(aux);
-    aux[0]=toupper(aux[0]);
+	int len;
+	int i;
+
+
+		PedirStringSinDigitos(mensaje, aux);
+		len=strlen(aux);
+		strlwr(aux);
+		aux[0]=toupper(aux[0]);
+		for(i=0;i<len;i++)
+		{
+			if(isspace(aux[i]))
+			{
+				aux[i+1]=toupper(aux[i+1]);
+			}
+		}
+
     strcpy(stringIngresado,aux);
 }
 
@@ -50,19 +61,18 @@ void PedirStringSinDigitos (char mensaje[], char stringIngresado[])
 	int retornoDigit;
 	int contadorIntentos=0;
 	int i;
+	int len;
 	char aux[100];
-	strcpy(aux,stringIngresado);
 	do
 	{
 		if(contadorIntentos>0)
 		{
 			printf("Error, no se admiten numeros. ");
 		}
-		printf("%s \n", mensaje);
-		fflush(stdin);
-		scanf("%[^\n]", aux);
+		PedirString(mensaje, aux);
 
-		for(i=0;i<strlen(aux);i++)
+		len=strlen(aux);
+		for(i=0;i<len;i++)
 		{
 			retornoDigit=isdigit(aux[i]);
 			if(retornoDigit==1)
@@ -73,6 +83,34 @@ void PedirStringSinDigitos (char mensaje[], char stringIngresado[])
 		contadorIntentos++;
 	}while(retornoDigit==1);
 	strcpy(stringIngresado,aux);
+}
+void PedirStringNumerico(char mensaje[], char numeroIngresado[])
+{
+	int retornoDigit;
+	int contadorIntentos=0;
+	int i;
+	int len;
+	char aux[100];
+	do
+	{
+		if(contadorIntentos>0)
+		{
+			printf("Error, solo se admiten numeros. ");
+		}
+		PedirString(mensaje, aux);
+
+		len=strlen(aux);
+		for(i=0;i<len;i++)
+		{
+			retornoDigit=isdigit(aux[i]);
+			if(retornoDigit==0)
+			{
+				break;
+			}
+		}
+		contadorIntentos++;
+	}while(retornoDigit==0);
+	strcpy(numeroIngresado,aux);
 }
 
 float PedirFlotanteValidandoCaracteres(char mensaje[])

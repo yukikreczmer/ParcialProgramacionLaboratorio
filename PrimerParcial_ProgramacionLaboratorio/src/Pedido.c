@@ -131,16 +131,16 @@ int ePedido_AltaPedido(ePedido listaPedidos[],int tamPedidos, eCliente listaClie
 {
 	int retorno=-1;
 	int i;
-	int retornoInit;
+	int retornoGral;
 	int IDCliente;
 	int IDPedido=-1;
 	int retornoFind;
 	int contadorIntentos=0;
 
-	if((listaPedidos!=NULL &&tamPedidos>0) && (listaClientes!=NULL&&tamClientes>0))
+	if((listaPedidos!=NULL &&tamPedidos>0) && (listaClientes!=NULL&&tamClientes>0) && (listaLocalidades!=NULL&&tamLocalidades>0))
 	{
-		retornoInit=ePedido_OrdenarPorID(listaPedidos, tamPedidos);
-		ValidarRetorno(retornoInit, "Error en la lista de pedidos.\n");
+		retornoGral=ePedido_OrdenarPorID(listaPedidos, tamPedidos);
+		ValidarRetorno(retornoGral, "Error en la lista de pedidos.\n");
 		for(i=0;i<tamPedidos;i++)
 		{
 			if(listaPedidos[i].isEmpty==1)
@@ -157,11 +157,11 @@ int ePedido_AltaPedido(ePedido listaPedidos[],int tamPedidos, eCliente listaClie
 					{
 						printf("Error no se encontro al cliente. \n");
 					}
-					retornoInit=eCliente_OrdenarPorID(listaClientes, tamClientes);
-					ValidarRetorno(retornoInit, "Error en la lista de clientes.\n");
+					retornoGral=eCliente_OrdenarPorID(listaClientes, tamClientes);
+					ValidarRetorno(retornoGral, "Error en la lista de clientes.\n");
 
-					retornoInit=eCliente_ImprimirClientes(listaClientes, tamClientes,listaLocalidades, tamLocalidades);
-					ValidarRetorno(retornoInit, "Error en la lista de clientes.\n");
+					retornoGral=eCliente_ImprimirClientes(listaClientes, tamClientes, listaLocalidades, tamLocalidades);
+					ValidarRetorno(retornoGral, "Error en la lista de clientes.\n");
 
 					IDCliente=PedirOpcionValidandoCaracteres("Ingrese el ID del cliente a realizar el pedido: ", 1, tamClientes, "Error. ");
 					retornoFind=eCliente_findPositionById(listaClientes, tamClientes, IDCliente);
@@ -173,6 +173,7 @@ int ePedido_AltaPedido(ePedido listaPedidos[],int tamPedidos, eCliente listaClie
 			listaPedidos[i].IDCliente=IDCliente;
 			strcpy(listaPedidos[i].estado, PENDIENTE);
 			listaPedidos[i].isEmpty=0;
+			listaClientes[retornoFind].cantidadPendientes ++;
 		}
 		else
 		{
@@ -210,6 +211,7 @@ int ePedido_ProcesarPedidoPendiente(ePedido listaPedidos[],int tamPedidos, eClie
 	int IDPedidoToProcesar;
 	int contadorIntentos=0;
 	int indexPedidoToProcesar;
+	int indexClienteToProcesar;
 
 
 	if((listaPedidos!=NULL &&tamPedidos>0)&& (listaClientes!=NULL && tamClientes>0))
@@ -235,17 +237,21 @@ int ePedido_ProcesarPedidoPendiente(ePedido listaPedidos[],int tamPedidos, eClie
 					}
 				}
 			}
-		IDPedidoToProcesar=PedirOpcionValidandoCaracteres("\nIngrese el numero ID del pedido a procesar:\n", 1, 1000, "Error. ");
+		IDPedidoToProcesar=PedirOpcionValidandoCaracteres("\nIngrese el numero ID del pedido a procesar: ", 1, 1000, "Error. ");
 		indexPedidoToProcesar=ePedido_findPositionById(listaPedidos, tamPedidos, IDPedidoToProcesar);
 
 		contadorIntentos++;
 		}while(indexPedidoToProcesar==-1|| listaPedidos[indexPedidoToProcesar].isEmpty==1);
 
-		listaPedidos[indexPedidoToProcesar].cantidadPolietilenoAlta=PedirFlotantePositivoValidandoCaracteres("\nIngrese la cantidad de kilos de Polietileno de Alta Densidad: ");
-		listaPedidos[indexPedidoToProcesar].cantidadPolietilenoBaja=PedirFlotantePositivoValidandoCaracteres("\nIngrese la cantidad de kilos de Polietileno de Baja Densidad: ");
-		listaPedidos[indexPedidoToProcesar].cantidadPolipropileno=PedirFlotantePositivoValidandoCaracteres("\nIngrese la cantidad de kilos de Polipropileno: \n");
+		listaPedidos[indexPedidoToProcesar].cantidadPolietilenoAlta=PedirFlotantePositivoValidandoCaracteres("Ingrese la cantidad de kilos de Polietileno de Alta Densidad: \n");
+		listaPedidos[indexPedidoToProcesar].cantidadPolietilenoBaja=PedirFlotantePositivoValidandoCaracteres("Ingrese la cantidad de kilos de Polietileno de Baja Densidad: \n");
+		listaPedidos[indexPedidoToProcesar].cantidadPolipropileno=PedirFlotantePositivoValidandoCaracteres("Ingrese la cantidad de kilos de Polipropileno: \n");
 
 		strcpy(listaPedidos[indexPedidoToProcesar].estado,COMPLETADO);
+		indexClienteToProcesar=eCliente_findPositionById(listaClientes, tamClientes, listaPedidos[indexPedidoToProcesar].IDCliente);
+		listaClientes[indexClienteToProcesar].cantidadPendientes--;
+		listaClientes[indexClienteToProcesar].cantidadCompletados++;
+
 		retorno=0;
 	}
 	return retorno;

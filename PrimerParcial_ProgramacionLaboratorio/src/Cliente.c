@@ -1,10 +1,8 @@
 /*
  * Cliente.c
  */
-#include <stdio.h>
 #include "Cliente.h"
-#include "input.h"
-#include "Localidad.h"
+
 
 int eCliente_initIsEmpty(eCliente listaClientes[], int tam)
 {
@@ -59,12 +57,13 @@ void ValidarRetorno(int retorno, char ErrorMensaje[])
 		printf("%s",ErrorMensaje);
 	}
 }
-int eCliente_HayEnAlta(eCliente list[], int len)//Retorna -1 si no hay hay clientes dados de alta o 1 si hay
+int eCliente_HayEnAlta(eCliente list[], int len)//Retorna -1 por error en lista o tamanio. 0 si no hay clientes dados de alta. 1 si hay clientes dados de alta
 {
 	int retorno=-1;
 	int i;
 	if(list!=NULL&&len>0)
 	{
+		retorno=0;
 		for(i=0;i<len;i++)
 		{
 			if(list[i].isEmpty==0)
@@ -76,18 +75,15 @@ int eCliente_HayEnAlta(eCliente list[], int len)//Retorna -1 si no hay hay clien
 	}
 	return retorno;
 }
+
+
 void eCliente_ImprimirCliente(eCliente cliente, eLocalidad listaLocalidades[], int tamLocalidades)
 {
-	int i;
-	for(i=0;i<tamLocalidades;i++)
-	{
-		if(cliente.ID==listaLocalidades[i].IdCliente)
-		{
-			printf("%03d      %-15s %-15s %-20s %-20s\n", cliente.ID, cliente.nombreEmpresa, cliente.cuit, listaLocalidades[i].Localidad, cliente.direccion);
-		}
-	}
+	int posicionLocalidad;
+	posicionLocalidad=eLocalidad_findPositionById(listaLocalidades, tamLocalidades, cliente.IDlocalidad);
+	printf("%03d      %-15s %-15s %-20s %-20s\n", cliente.ID, cliente.nombreEmpresa, cliente.cuit, listaLocalidades[posicionLocalidad].descripcion, cliente.direccion);
 }
-int eCliente_ImprimirClientes(eCliente listaClientes[], int tamCliente, eLocalidad listaLocalidades[], int tamLocalidades)
+int eCliente_ImprimirClientes(eCliente listaClientes[], int tamCliente,  eLocalidad listaLocalidades[], int tamLocalidades)
 {
 	int retorno=-1;
 	int i;
@@ -111,25 +107,54 @@ int eCliente_AltaCliente(eCliente listaClientes[], int tamCliente, eLocalidad li
 {
 	int retorno=-1;
 	int i;
-	int indexLocalidad;
-
-	if(listaClientes!=NULL && tamCliente>0)
+	char localidadCliente[60];
+	int retornoLocalidad;
+	if((listaClientes!=NULL && tamCliente>0)&&(listaLocalidades!=NULL && tamLocalidades>0))
 	{
 		for(i=0;i<tamCliente;i++)
 		{
 			if(listaClientes[i].isEmpty==1)
 			{
 				PedirString("Ingrese Nombre de la empresa: ", listaClientes[i].nombreEmpresa);
-				PedirString("\nIngrese su CUIT: ", listaClientes[i].cuit);
-				indexLocalidad=eLocalidad_BuscarIdLibre(listaLocalidades, tamLocalidades);
-				if(indexLocalidad!=-1)
-				{
-					listaLocalidades[indexLocalidad].IdCliente=listaClientes[i].ID;
-					listaLocalidades[indexLocalidad].isEmpty=0;
-					PedirStringPrimeraMayusc("\nIngrese su localidad: ", listaLocalidades[indexLocalidad].Localidad);
-				}
+				PedirStringNumerico("\nIngrese su CUIT: ", listaClientes[i].cuit);
 				PedirString("\nIngrese la direccion: ", listaClientes[i].direccion);
+				PedirStringPrimeraMayusc("\nIngrese su localidad: ", localidadCliente);
 				listaClientes[i].isEmpty=0;
+
+				//Busco la localidad ingresada en la lista de localidades.
+				//devuelve -1 si hay error en las listas, 0 si no hay error pero no encontro la localidad en la lista o el Id de la localidad si la encontró
+				retornoLocalidad=eLocalidad_BuscarLocalidad(localidadCliente, listaLocalidades, tamLocalidades);
+				if(retornoLocalidad==-1)
+				{
+					printf("Hubo un error en la lista de localidades\n");
+				}
+				//Si la encuentra devuelve el numero de ID de la localidad para guardar como FK en eCliente
+				else if(retornoLocalidad>0)
+				{
+					listaClientes[i].IDlocalidad=retornoLocalidad;
+				}
+				else
+				{
+					//Si el retorno es 0 no hubo error en las listas pero no encontró la localidad en la lista, se procede a dar de alta y guardar el ID como FK en cliente
+					retornoLocalidad=eLocalidad_AltaLocalidad(listaLocalidades, tamLocalidades, localidadCliente);
+					listaClientes[i].IDlocalidad=retornoLocalidad;
+					//retorna -1 por error en lista o tamaño. 0 si no hay espacio libre. ID de localidad si agrego la localidad a la lista
+					if(retornoLocalidad==-1)
+					{
+						printf("Hubo un error en la lista de localidades\n");
+					}
+					else if(retornoLocalidad>0)
+					{
+						//si hay lugar en la lista retorna el ID de la localidad y la guardo como FK en cliente
+						listaClientes[i].IDlocalidad=retornoLocalidad;
+					}
+					else
+					{
+						//si retorna 0 es porque no hay espacio para almacenar una nueva localidad en la lista
+						printf("No hay espacio libre para añadir su localidad\n");
+					}
+				}
+
 				printf("\nSe dio de alta a un cliente. Su numero ID es: %03d\n\n", listaClientes[i].ID);
 				retorno=0;
 				break;
@@ -145,10 +170,11 @@ int eCliente_ModificarCliente(eCliente listaClientes[], int tamClientes, eLocali
 	int retornoOrdenarPorID;
 	int retornoPrint;
 	int IdToModificar;
-	int retornoFindEmployee;
+	int retornoPosition;
 	int opcionAModificar;
 	int contadorIntentos=0;
-	int i;
+	int retornoLocalidad;
+	char localidadCliente[60];
 
 	if(listaClientes!=NULL && tamClientes>0)
 	{
@@ -163,10 +189,10 @@ int eCliente_ModificarCliente(eCliente listaClientes[], int tamClientes, eLocali
 			retornoPrint=eCliente_ImprimirClientes(listaClientes, tamClientes, listaLocalidades, tamLocalidades);
 			ValidarRetorno(retornoPrint, "Error en la lista de clientes.\n");
 			IdToModificar=PedirOpcionValidandoCaracteres("Ingrese el ID del cliente a modificar", 1, tamClientes, "Error. ");
-			retornoFindEmployee=eCliente_findPositionById(listaClientes, tamClientes, IdToModificar);
+			retornoPosition=eCliente_findPositionById(listaClientes, tamClientes, IdToModificar);
 
 			contadorIntentos++;
-		}while(retornoFindEmployee==-1|| listaClientes[retornoFindEmployee].isEmpty==1);
+		}while(retornoPosition==-1|| listaClientes[retornoPosition].isEmpty==1);
 		printf(	"1. Direccion\n"
 				"2. Localidad\n");
 
@@ -174,17 +200,44 @@ int eCliente_ModificarCliente(eCliente listaClientes[], int tamClientes, eLocali
 		switch(opcionAModificar)
 		{
 			case 1:
-				PedirString("Ingrese la direccion: ", listaClientes[retornoFindEmployee].direccion);
+				PedirString("Ingrese la direccion: ", listaClientes[retornoPosition].direccion);
 				break;
 			case 2:
-				for(i=0;i<tamLocalidades;i++)
+				PedirStringPrimeraMayusc("Ingrese la localidad: ", localidadCliente);
+				retornoLocalidad=eLocalidad_BuscarLocalidad(localidadCliente, listaLocalidades, tamLocalidades);
+				//Busco la localidad ingresada en la lista de localidades.
+				//devuelve -1 si hay error en las listas, 0 si no hay error pero no encontro la localidad o el Id de la localidad si la encontró
+				if(retornoLocalidad==-1)
 				{
-					if(IdToModificar==listaLocalidades[i].IdCliente)
+					printf("Hubo un error en la lista de localidades\n");
+				}
+				else if(retornoLocalidad>0)
+				//Si la encuentra devuelve el numero de ID de la localidad(mayor a 0) para guardar como FK en eCliente
+				{
+					listaClientes[retornoPosition].IDlocalidad=retornoLocalidad;
+				}
+				else
+				{
+					//Si el retorno es 0 no hubo error en las listas pero no encontró la localidad en la lista, se procede a dar de alta y guardar el ID como FK en cliente
+					//retorna -1 por error en lista o tamaño. 0 si no hay espacio libre. ID de localidad si agrego la localidad a la lista
+					retornoLocalidad=eLocalidad_AltaLocalidad(listaLocalidades, tamLocalidades, localidadCliente);
+					if(retornoLocalidad==-1)
 					{
-						PedirStringPrimeraMayusc("Ingrese la localidad: ", listaLocalidades[i].Localidad);
+						printf("Hubo un error en la lista de localidades\n");
+					}
+					else if(retornoLocalidad>0)
+					{
+						//si hay lugar en la lista guarda la localidad en la lista, retorna el ID de la localidad y la guardo como FK en cliente
+						listaClientes[retornoPosition].IDlocalidad=retornoLocalidad;
+					}
+					else
+					{
+						//si retorna 0 es porque no hay espacio para almacenar una nueva localidad en la lista
+						printf("No hay espacio libre para añadir su localidad\n");
 					}
 				}
 				break;
+
 				retornoPrint=eCliente_ImprimirClientes(listaClientes, tamClientes, listaLocalidades, tamLocalidades);
 				ValidarRetorno(retornoPrint, "Error en la lista de clientes.\n");
 		}
@@ -194,7 +247,7 @@ int eCliente_ModificarCliente(eCliente listaClientes[], int tamClientes, eLocali
 	return retorno;
 }
 
-int eCliente_BajaCliente(eCliente list[],int len, eLocalidad listaLocalidades[], int tamLocalidades)
+int eCliente_BajaCliente(eCliente listaClientes[],int tamClientes, eLocalidad listaLocalidades[], int tamLocalidades)
 {
 	int retorno=-1;
 	int retornoPrint;
@@ -203,9 +256,8 @@ int eCliente_BajaCliente(eCliente list[],int len, eLocalidad listaLocalidades[],
 	int retornoRemove;
 	int retornoFind;
 	int contadorIntentos=0;
-	int i;
 
-	if(list!=NULL && len>0)
+	if(listaClientes!=NULL && tamClientes>0)
 	{
 		do
 		{
@@ -213,28 +265,21 @@ int eCliente_BajaCliente(eCliente list[],int len, eLocalidad listaLocalidades[],
 			{
 				printf("Error no se encontro al cliente.\n");
 			}
-		retornoOrdenar=eCliente_OrdenarPorID(list, len);
+		retornoOrdenar=eCliente_OrdenarPorID(listaClientes, tamClientes);
 		ValidarRetorno(retornoOrdenar, "Error en la lista de clientes.\n");
-		retornoPrint=eCliente_ImprimirClientes(list, len, listaLocalidades, tamLocalidades);
+		retornoPrint=eCliente_ImprimirClientes(listaClientes, tamClientes, listaLocalidades, tamLocalidades);
 		ValidarRetorno(retornoPrint, "Error.\n");
 		idToBaja=PedirEnteroPositivoValidandoCaracteres("Ingrese el ID del cliente a dar de baja: \n", "Error. ");
-		retornoFind=eCliente_findPositionById(list, len, idToBaja);
+		retornoFind=eCliente_findPositionById(listaClientes, tamClientes, idToBaja);
 		contadorIntentos++;
-		}while(retornoFind==-1|| list[retornoFind].isEmpty==1);
-		printf("¿Desea eliminar al cliente %s?\n",list[retornoFind].nombreEmpresa);
+		}while(retornoFind==-1|| listaClientes[retornoFind].isEmpty==1);
+		printf("¿Desea eliminar al cliente %s?\n",listaClientes[retornoFind].nombreEmpresa);
 		printf("1. Confirmar\n"
 				"2. Cancelar\n");
-		retornoRemove=PedirOpcionValidandoCaracteres("", 1, 2, "Escriba 1 para confirmar o 2 para cancelar\n");
+		retornoRemove=PedirOpcionValidandoCaracteres("Escriba 1 o 2.\n", 1, 2, "Escriba 1 para confirmar o 2 para cancelar\n");
 		if(retornoRemove==1)
 		{
-			list[retornoFind].isEmpty=1;
-			for(i=0;i<tamLocalidades;i++)
-			{
-				if(idToBaja==listaLocalidades[i].IdCliente)
-				{
-					listaLocalidades[i].isEmpty=1;
-				}
-			}
+			listaClientes[retornoFind].isEmpty=1;
 		}
 
 		retorno=0;
@@ -253,6 +298,7 @@ int eCliente_findPositionById(eCliente listaClientes[], int tamClientes,int ID)
 			if(listaClientes[i].ID == ID)
 			{
 				retorno=i;
+				break;
 			}
 		}
 	}
@@ -284,5 +330,21 @@ int eCliente_OrdenarPorID(eCliente list[], int len)
 	}
 	return retorno;
 
+}
+int eCliente_IniciarCantidadPedidos(eCliente listaClientes[], int tamClientes)
+{
+	int retorno=-1;
+	int i;
+	if(listaClientes!=NULL && tamClientes>0)
+	{
+		for(i=0;i<tamClientes;i++)
+		{
+			listaClientes[i].cantidadCompletados=0;
+			listaClientes[i].cantidadPendientes=0;
+		}
+		retorno=1;
+	}
+
+	return retorno;
 }
 

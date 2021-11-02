@@ -8,43 +8,42 @@
 #include <stdlib.h>
 #include "input.h"
 #include "nexo.h"
-#define tamClientes 3
-#define tamPedidos 3
-#define tamLocalidad 3
+#define tamClientes 100
+#define tamPedidos 1000
+#define tamLocalidades 100
 
 
 int main(void) {
 	setbuf(stdout,NULL);
 	int opcion;
+
 	eCliente listaClientes[tamClientes];
-
 	ePedido listaPedidos[tamPedidos];
-
-	eLocalidad listaLocalidades[tamLocalidad];
-
+	eLocalidad listaLocalidades[tamLocalidades];
 
 	int retornoInit;
 	int retornoGral;
 	float ppPromedioPorCliente;
 
-
+	//	INICIALIZO ARRAYS. ISEMPTY=1; (listaClientes, listaPedidos, listaLocalidades)
 	retornoInit=eCliente_initIsEmpty(listaClientes, tamClientes);
 	ValidarRetorno(retornoInit, "Error en la lista de clientes.\n");
 	retornoInit=ePedido_initIsEmpty(listaPedidos, tamPedidos);
-	ValidarRetorno(retornoInit, "Error en la lista de Pedidos.\n");
+	ValidarRetorno(retornoInit, "Error en la lista de pedidos.\n");
+	retornoInit=eLocalidad_initIsEmpty(listaLocalidades, tamLocalidades);
+	ValidarRetorno(retornoInit, "Error en la lista de localidades\n");
 
+	//	GENERO ID AUTOMATICAMENTE PARA LOS ARRAYS (listaClientes, listaPedidos, listaLocalidades)
 	retornoInit=eCliente_GenerarIdAuto(listaClientes, tamClientes);
 	ValidarRetorno(retornoInit,"Error en la lista de clientes.\n");
 	retornoInit=ePedido_GenerarIdAuto(listaPedidos, tamPedidos);
-	ValidarRetorno(retornoInit,"Error en la lista de Pedidos.\n");
+	ValidarRetorno(retornoInit,"Error en la lista de pedidos.\n");
+	retornoInit=eLocalidad_GenerarIdAuto(listaLocalidades, tamLocalidades);
+	ValidarRetorno(retornoInit, "Error en la lista de localidades\n");
 
-	retornoInit=eLocalidad_initIsEmpty(listaLocalidades, tamLocalidad);
-	ValidarRetorno(retornoInit,"Error en la lista de Localidades.\n");
-	retornoInit=eLocalidad_GenerarIdAuto(listaLocalidades, tamLocalidad);
-	ValidarRetorno(retornoInit,"Error en la lista de Localidades.\n");
-
-
-
+	//	INICIALIZO CONTADORES DE PEDIDOS PENDIENTES Y COMPLETADOS PARA CADA CLIENTE
+	retornoInit=eCliente_IniciarCantidadPedidos(listaClientes, tamClientes);
+	ValidarRetorno(retornoInit, "Error en la lista de clientes\n");
 
 
 
@@ -60,50 +59,52 @@ int main(void) {
 				"8. Imprimir pedidos procesados\n"
 				"9. Pedidos pendientes por localidad\n"
 				"10. Promedio de kilos de polipropileno reciclado por clientes\n"
+				"11. Imprimir cliente con mas pedidos pendientes\n"
+				"12. Imprimir cliente con mas pedidos completados\n"
 				"0. SALIR\n");
 
 
 
-		opcion=PedirOpcionValidandoCaracteres("Ingrese una opcion: ", 0, 10, "Error. ");
+		opcion=PedirOpcionValidandoCaracteres("Ingrese una opcion: ", 0, 12, "Error. ");
 		switch(opcion)
 		{
 		case 1:
 			retornoGral=eCliente_OrdenarPorID(listaClientes, tamClientes);
 			ValidarRetorno(retornoGral, "Error en la lista de Clientes.\n");
-			retornoGral=eCliente_AltaCliente(listaClientes, tamClientes, listaLocalidades, tamLocalidad);
+			retornoGral=eCliente_AltaCliente(listaClientes, tamClientes, listaLocalidades, tamLocalidades);
 			ValidarRetorno(retornoGral, "No hay espacio libre para añadir un nuevo cliente.\n");
 			break;
 		case 2:
 			retornoGral=eCliente_HayEnAlta(listaClientes, tamClientes);
-			if(retornoGral==-1)
+			if(retornoGral==0)
 				{
 					printf("Primero debe realizar la carga de al menos 1 cliente.\n");
 				}
 			else
 			{
-				retornoGral=eCliente_ModificarCliente(listaClientes, tamClientes, listaLocalidades, tamLocalidad);
+				retornoGral=eCliente_ModificarCliente(listaClientes, tamClientes, listaLocalidades, tamLocalidades);
 				ValidarRetorno(retornoGral, "Error en la lista de clientes.\n");
 			}
 			break;
 		case 3:
-			if(eCliente_HayEnAlta(listaClientes, tamClientes)==-1)
+			if(eCliente_HayEnAlta(listaClientes, tamClientes)==0)
 				{
 					printf("Primero debe realizar la carga de al menos 1 cliente.\n");
 				}
 			else
 			{
-				retornoGral=eCliente_BajaCliente(listaClientes, tamClientes, listaLocalidades, tamLocalidad);
+				retornoGral=eCliente_BajaCliente(listaClientes, tamClientes, listaLocalidades, tamLocalidades);
 				ValidarRetorno(retornoGral, "Error en la lista de clientes.\n");
 			}
 			break;
 		case 4:
-			if(eCliente_HayEnAlta(listaClientes, tamClientes)==-1)
+			if(eCliente_HayEnAlta(listaClientes, tamClientes)==0)
 				{
 					printf("Primero debe realizar la carga de al menos 1 cliente.\n");
 				}
 			else
 			{
-				retornoGral=ePedido_AltaPedido(listaPedidos, tamPedidos, listaClientes, tamClientes, listaLocalidades, tamLocalidad);
+				retornoGral=ePedido_AltaPedido(listaPedidos, tamPedidos, listaClientes, tamClientes, listaLocalidades, tamLocalidades);
 				ValidarRetorno(retornoGral, "Error en las listas.\n");
 			}
 			break;
@@ -120,13 +121,13 @@ int main(void) {
 
 			break;
 		case 6:
-			if(eCliente_HayEnAlta(listaClientes, tamClientes)==-1)
+			if(eCliente_HayEnAlta(listaClientes, tamClientes)==0)
 			{
 				printf("No hay clientes dados de alta.\n");
 			}
 			else
 			{
-				retornoGral=ImprimirClientesConPendientes(listaClientes, tamClientes, listaPedidos, tamPedidos, listaLocalidades, tamLocalidad);
+				retornoGral=ImprimirClientesConPendientes(listaClientes, tamClientes, listaPedidos, tamPedidos, listaLocalidades, tamLocalidades);
 			}
 			break;
 		case 7:
@@ -162,7 +163,7 @@ int main(void) {
 				}
 				else
 				{
-					retornoGral=PendientesPorLocalidad(listaClientes, tamClientes, listaPedidos, tamPedidos, listaLocalidades, tamLocalidad);
+					retornoGral=PendientesPorLocalidad(listaClientes, tamClientes, listaPedidos, tamPedidos, listaLocalidades, tamLocalidades);
 				}
 			break;
 		case 10:
@@ -185,6 +186,30 @@ int main(void) {
 					}
 
 			break;
+		case 11:
+			retornoGral=ePedido_HayPendientes(listaPedidos, tamPedidos);
+				if(retornoGral==-1)
+				{
+					printf("No hay pedidos pendientes.\n");
+				}
+				else
+				{
+					retornoGral=ImprimirMasPendientesCliente(listaClientes, tamClientes, listaLocalidades, tamLocalidades);
+					ValidarRetorno(retornoGral, "Error en las listas de clientes/localidades\n");
+				}
+
+			break;
+		case 12:
+			retornoGral=ePedido_HayProcesados(listaPedidos, tamPedidos);
+				if(retornoGral==-1)
+				{
+					printf("No hay pedidos procesados.\n");
+				}
+				else
+				{
+					retornoGral=ImprimirMasCompletadosCliente(listaClientes, tamClientes, listaLocalidades, tamLocalidades);
+					ValidarRetorno(retornoGral, "Error en las listas de clientes/localidades\n");
+				}
 		}
 
 

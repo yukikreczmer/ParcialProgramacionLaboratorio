@@ -37,6 +37,12 @@ void PedirStringPrimeraMayusc (char mensaje[], char stringIngresado[]);
 /// @param stringIngresado
 void PedirStringSinDigitos (char mensaje[], char stringIngresado[]);
 
+/// @brief Pide un string numerico hasta que solo se ingresen numeros y lo devuelve por referencia
+///
+/// @param mensaje
+/// @param numeroIngresado
+void PedirStringNumerico(char mensaje[], char numeroIngresado[]);
+
 
 /// @brief Pide un flotante y valida si hay algun caracter ingresado o un - (signo negativo) luego de la primer posición. Sino muestra error y vuelve a pedirlo
 ///
